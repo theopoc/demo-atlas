@@ -37,7 +37,7 @@ demo-atlas/
 ├── initdb/                  # Scripts d'init MySQL
 ├── atlas.hcl                # Configuration Atlas (env docker)
 ├── schema.hcl               # Schéma cible déclaratif (source de vérité)
-├── Dockerfile               # Image Python/uv pour l'application
+├── Dockerfile               # Multi-stage build : builder uv + runtime Alpine minimal
 ├── compose.yml              # MySQL 8 + application + service Atlas
 └── pyproject.toml           # Dépendances Python (Flask, mysql-connector)
 ```
@@ -53,7 +53,7 @@ docker compose ps   # STATUS doit être "healthy" (~15 s)
 
 Deux services démarrent :
 - **mysql** – MySQL 8 sur le port `3306`
-- **myapp** – API Flask sur le port `5001`
+- **myapp** – API Flask sur le port `5001` (image multi-stage, sans uv en runtime)
 
 ---
 

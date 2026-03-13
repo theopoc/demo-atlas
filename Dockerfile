@@ -1,45 +1,38 @@
-# Use a Python image with uv pre-installed
-FROM ghcr.io/astral-sh/uv:python3.13-alpine
+# Stage 1: Builder — installs dependencies with uv
+FROM ghcr.io/astral-sh/uv:python3.13-alpine AS builder
 
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=0
 
-
-# Install the project into `/app`
 WORKDIR /app
 
-# Enable bytecode compilation
-ENV UV_COMPILE_BYTECODE=1
-
-# Copy from the cache instead of linking since it's a mounted volume
-ENV UV_LINK_MODE=copy
-
-
-
-# Ensure installed tools can be executed out of the box
-ENV UV_TOOL_BIN_DIR=/usr/local/bin
-
-# Install the project's dependencies using the lockfile and settings
+# Install dependencies (without the project itself)
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project
+    uv sync --locked --no-install-project --no-dev
 
-# Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
+# Copy source and install the project
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked
+    uv sync --locked --no-dev
+
+
+# Stage 2: Runtime — minimal image without uv
+FROM python:3.13-alpine
+
+# Setup a non-root user
+RUN addgroup -g 1001 -S nonroot \
+ && adduser -u 1001 -S nonroot -G nonroot
+
+# Copy the built virtualenv and application from the builder
+COPY --from=builder --chown=nonroot:nonroot /app /app
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Reset the entrypoint, don't invoke `uv`
-ENTRYPOINT []
+USER nonroot
+WORKDIR /app
 
 EXPOSE 5001
 
-# Run the FastAPI application by default
-# Uses `uv run` to sync dependencies on startup, respecting UV_NO_DEV
-# Uses `fastapi dev` to enable hot-reloading when the `watch` sync occurs
-# Uses `--host 0.0.0.0` to allow access from outside the container
-# Note in production, you should use `fastapi run` instead
-CMD ["uv", "run", "src/main.py"]
+CMD ["python", "src/main.py"]
