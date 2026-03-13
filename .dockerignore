@@ -9,3 +9,4 @@ logs
 Dockerfile
 compose.yaml
 .venv
+.ansible
