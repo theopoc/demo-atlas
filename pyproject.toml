@@ -1,0 +1,9 @@
+[project]
+name = "demo-atlas-app"
+version = "0.1.0"
+description = "Simple task manager – Atlas migration demo"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.1.0",
+    "mysql-connector-python>=9.2.0",
+]

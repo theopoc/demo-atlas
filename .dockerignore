@@ -1,0 +1,11 @@
+.claude
+initdb
+migrations
+logs
+.mise.toml
+*.md
+*.hcl
+.dockerignore
+Dockerfile
+compose.yaml
+.venv
